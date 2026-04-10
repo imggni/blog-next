@@ -5,6 +5,7 @@ const navigationItems = [
   { href: "/about", label: "关于" },
   { href: "/blog", label: "博客" },
   { href: "/projects", label: "项目" },
+  { href: "/mall", label: "商城" },
 ];
 
 export function Header() {
