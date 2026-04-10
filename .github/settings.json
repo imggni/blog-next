@@ -1,0 +1,12 @@
+{
+  "editor.tabSize": 2,
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": { "source.fixAll": true },
+  "files.exclude": { "**/node_modules": true, "**/dist": true },
+  "typescript.preferences.importModuleSpecifier": "relative",
+  "editor.fontSize": 14,
+  "editor.fontFamily": "'Fira Code', monospace",
+  "editor.insertSpaces": true,
+  "files.autoSave": "afterDelay",
+  "files.autoSaveDelay": 1000
+}
