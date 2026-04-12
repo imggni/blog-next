@@ -6,18 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { CategoryList } from '@/components/mall/category-list';
 
 export const metadata: Metadata = {
   title: "炫酷商城首页",
   description: "数字配件商城首页，展示热门商品、分类推荐与限时优惠。",
 };
 
-const categories = [
-  { label: "潮流耳机", color: "bg-violet-500/10 text-violet-500" },
-  { label: "电脑配件", color: "bg-sky-500/10 text-sky-500" },
-  { label: "智能穿戴", color: "bg-emerald-500/10 text-emerald-500" },
-  { label: "游戏外设", color: "bg-fuchsia-500/10 text-fuchsia-500" },
-];
 
 const highlights = [
   {
@@ -145,21 +140,7 @@ export default function MallHomePage() {
           </Button>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {categories.map((category) => (
-            <Card key={category.label} className="rounded-3xl border border-border/70 bg-card p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
-              <div className="flex min-h-[160px] flex-col justify-between gap-4">
-                <div className="min-w-0">
-                  <p className="text-lg font-semibold">{category.label}</p>
-                  <p className="mt-2 text-sm text-muted-foreground">精选好物，极速配货</p>
-                </div>
-                <div className={`whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium ${category.color}`}>
-                  {category.label}
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
+        <CategoryList />
       </section>
 
       <Separator />

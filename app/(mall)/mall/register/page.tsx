@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { userApi, ApiError } from '@/lib/api';
 import { UserRegisterRequest } from '@/types/api';
+import { setAuthStorage, StoredUser } from '@/lib/auth';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -35,13 +36,16 @@ export default function RegisterPage() {
 
     try {
       const response = await userApi.register(formData);
+      const token = response.data.token;
+      const nextUser: StoredUser = {
+        username: response.data.username || response.data.phone,
+        phone: response.data.phone,
+        isAdmin: response.data.isAdmin,
+        avatar: response.data.avatar,
+      };
 
-      // 保存token到localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('token', response.data.token);
-      }
+      setAuthStorage(token, nextUser);
 
-      // 跳转到首页
       router.push('/mall');
     } catch (err) {
       if (err instanceof ApiError) {

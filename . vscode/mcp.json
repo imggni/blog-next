@@ -1,0 +1,20 @@
+{
+  "servers": {
+    "shadcn": {
+      "command": "node",
+      "args": [
+        "--max-old-space-size=4096",
+        "--",
+        "./node_modules/shadcn/dist/mcp.js"
+      ]
+    },
+    "apifox": {
+      "command": "npx",
+      "args": ["apifox-mcp-server@latest"],
+      "env": {
+        "APIFOX_ACCESS_TOKEN": "afxp_4a7505XF2ZMRXksVEViPL8vnyqUzPR18gTa8",
+        "APIFOX_PROJECT_ID": "8058042"
+      }
+    }
+  }
+}

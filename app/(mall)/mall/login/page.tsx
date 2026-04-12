@@ -9,6 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { userApi, ApiError } from '@/lib/api';
 import { UserLoginRequest } from '@/types/api';
+import { toast } from 'sonner';
+import { setAuthStorage, StoredUser } from '@/lib/auth';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -34,27 +36,30 @@ export default function LoginPage() {
 
     try {
       const response = await userApi.login(formData);
+      const token = response.data.token;
+      const isAdmin = response.data.isAdmin;
+      const nextUser: StoredUser = {
+        username: response.data.username || response.data.phone,
+        phone: response.data.phone,
+        isAdmin: response.data.isAdmin,
+        avatar: response.data.avatar,
+      };
 
-      // 保存token到localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('token', response.data.token);
-      }
+      setAuthStorage(token, nextUser);
 
-      // 跳转到首页
-      router.push('/mall');
+      toast.success('登录成功，正在跳转...');
+      router.push(isAdmin ? '/mall/admin' : '/mall');
     } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message);
-      } else {
-        setError('登录失败，请稍后重试');
-      }
+      const message = err instanceof ApiError ? err.message : '登录失败，请稍后重试';
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center ">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>登录</CardTitle>
