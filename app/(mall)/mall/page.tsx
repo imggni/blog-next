@@ -4,9 +4,9 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { CategoryList } from '@/components/mall/category-list';
+import { MallSearch } from "@/components/mall/mall-search";
 
 export const metadata: Metadata = {
   title: "炫酷商城首页",
@@ -74,10 +74,7 @@ export default function MallHomePage() {
               </p>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-[1.4fr_0.6fr]">
-              <Input placeholder="搜索你想要的数码配件" className="bg-white/10 text-white placeholder:text-slate-300" />
-              <Button className="h-12">立即发现</Button>
-            </div>
+            <MallSearch inputClassName="bg-white/10 text-white placeholder:text-slate-300" buttonClassName="h-12" />
 
             <div className="grid gap-3 sm:grid-cols-3">
               {highlights.map((item) => (

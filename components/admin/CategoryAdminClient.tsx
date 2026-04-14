@@ -1,7 +1,5 @@
 "use client";
 
-"use client";
-
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +15,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { categoryApi, ApiError } from '@/lib/api';
+import { CategoryIcon } from "@/components/mall/category-icon";
 
 interface Category {
   id: string;
@@ -106,7 +105,7 @@ export default function CategoryAdminClient() {
             </Link>
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="secondary">{total} 条分类</Badge>
-              <Badge variant="outline">{withIcon} 个图标</Badge>
+              <Badge variant="secondary">{withIcon} 个图标</Badge>
             </div>
           </div>
         </div>
@@ -173,7 +172,7 @@ export default function CategoryAdminClient() {
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-4">
                       <div className="flex h-14 w-14 items-center justify-center rounded-[1.25rem] bg-primary/10 text-3xl text-primary shadow-sm shadow-primary/10">
-                        {category.icon ? category.icon : category.name.charAt(0).toUpperCase()}
+                        <CategoryIcon icon={category.icon} name={category.name} size={24} />
                       </div>
                       <div>
                         <div className="text-lg font-semibold">{category.name}</div>
@@ -181,7 +180,7 @@ export default function CategoryAdminClient() {
                       </div>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant="outline">{category.icon || '未设置图标'}</Badge>
+                      {/* <Badge variant="outline">{category.icon || '未设置图标'}</Badge> */}
                       <Button size="sm">编辑</Button>
                       <Button variant="destructive" size="sm">删除</Button>
                     </div>
@@ -216,7 +215,7 @@ export default function CategoryAdminClient() {
               <Button size="sm">前往商品管理</Button>
             </Link>
             <Link href="/mall/admin/order" className="w-full sm:w-auto">
-              <Button variant="outline" size="sm">查看订单</Button>
+              <Button size="sm">查看订单</Button>
             </Link>
           </CardFooter>
         </Card>

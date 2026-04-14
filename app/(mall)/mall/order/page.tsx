@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +13,7 @@ import { Order } from '@/types/api';
 
 const getStatusBadgeVariant = (status: string) => {
   switch (status) {
-    case 'pending':
+    case 'unpaid':
       return 'secondary';
     case 'paid':
       return 'default';
@@ -29,7 +30,7 @@ const getStatusBadgeVariant = (status: string) => {
 
 const getStatusText = (status: string) => {
   switch (status) {
-    case 'pending':
+    case 'unpaid':
       return '待支付';
     case 'paid':
       return '已支付';
@@ -160,7 +161,14 @@ export default function OrderListPage() {
                     {order.orderGoods.map((item) => (
                       <div key={item.id} className="flex items-center gap-4 p-2 bg-gray-50 rounded">
                         <div className="w-12 h-12 bg-gray-200 rounded flex-shrink-0">
-                          {/* 这里可以添加商品图片 */}
+                          <Image
+                            src={item.productImage}
+                            alt={item.productTitle}
+                            width={48}
+                            height={48}
+                            sizes="48px"
+                            className="h-full w-full object-cover rounded"
+                          />
                         </div>
                         <div className="flex-1">
                           <p className="font-medium">{item.productTitle}</p>

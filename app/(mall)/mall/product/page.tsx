@@ -1,25 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination';
+import { Separator } from '@/components/ui/separator';
 import { Waterfall } from '@/components/ui/waterfall';
-import { productApi, ApiError } from '@/lib/api';
-import { Product } from '@/types/api';
+import { ProductPagination } from '@/components/mall/product-pagination';
+import { categoryApi, productApi, ApiError } from '@/lib/api';
+import type { Category, Product } from '@/types/api';
 
 type ProductListPayload =
   | Product[]
@@ -37,73 +31,45 @@ type ProductListApiResponse = {
   data: ProductListPayload;
 };
 
-export default function ProductListPage() {
+function parseProductListResponse(response: ProductListApiResponse) {
+  const payload = response.data;
+  const items = Array.isArray(payload) ? payload : Array.isArray(payload?.data) ? payload.data : [];
+  const pagination = !Array.isArray(payload) ? payload?.pagination : undefined;
+
+  return { items, pagination };
+}
+
+function ProductListClient() {
+  const searchParams = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
   const [searchKeyword, setSearchKeyword] = useState('');
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize] = useState(30);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
-  const parseProductListResponse = (response: ProductListApiResponse) => {
-    const payload = response.data;
-    const items = Array.isArray(payload)
-      ? payload
-      : Array.isArray(payload?.data)
-      ? payload.data
-      : [];
-    const pagination = !Array.isArray(payload) ? payload?.pagination : undefined;
-
-    return { items, pagination };
-  };
-
-  useEffect(() => {
-    const fetchProducts = async (keyword = '', page = 1) => {
-      setLoading(true);
-      setError('');
-
-      try {
-        const response = await productApi.getList({
-          ...(keyword && { keyword }),
-          page,
-          pageSize,
-        });
-        const { items, pagination } = parseProductListResponse(response);
-        setProducts(items);
-        setTotal(pagination?.total ?? items.length);
-        setTotalPages(pagination?.totalPages ?? 1);
-        setCurrentPage(pagination?.page ?? page);
-      } catch (err) {
-        if (err instanceof ApiError) {
-          setError(err.message);
-        } else {
-          setError('获取商品列表失败');
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProducts();
-  }, [pageSize]);
-
-  const handleSearch = async () => {
+  const fetchProducts = useCallback(async (params: { keyword: string; page: number; categoryId: number | null }) => {
+    const { keyword, page, categoryId } = params;
     setLoading(true);
     setError('');
 
     try {
       const response = await productApi.getList({
-        ...(searchKeyword && { keyword: searchKeyword }),
-        page: 1,
+        ...(keyword && { keyword }),
+        ...(categoryId ? { categoryId } : {}),
+        page,
         pageSize,
       });
       const { items, pagination } = parseProductListResponse(response);
       setProducts(items);
       setTotal(pagination?.total ?? items.length);
       setTotalPages(pagination?.totalPages ?? 1);
-      setCurrentPage(pagination?.page ?? 1);
+      setCurrentPage(pagination?.page ?? page);
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
@@ -113,6 +79,32 @@ export default function ProductListPage() {
     } finally {
       setLoading(false);
     }
+  }, [pageSize]);
+
+  useEffect(() => {
+    const keywordFromUrl = searchParams.get('keyword')?.trim() ?? '';
+    setSearchKeyword(keywordFromUrl);
+    fetchProducts({ page: 1, keyword: keywordFromUrl, categoryId: selectedCategoryId });
+  }, [fetchProducts, searchParams, selectedCategoryId]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      setCategoriesLoading(true);
+      try {
+        const response = await categoryApi.getList();
+        setCategories(response.data);
+      } catch {
+        setCategories([]);
+      } finally {
+        setCategoriesLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  const handleSearch = async () => {
+    await fetchProducts({ page: 1, keyword: searchKeyword.trim(), categoryId: selectedCategoryId });
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -122,29 +114,12 @@ export default function ProductListPage() {
   };
 
   const handlePageChange = async (newPage: number) => {
-    setLoading(true);
-    setError('');
+    await fetchProducts({ page: newPage, keyword: searchKeyword.trim(), categoryId: selectedCategoryId });
+  };
 
-    try {
-      const response = await productApi.getList({
-        ...(searchKeyword && { keyword: searchKeyword }),
-        page: newPage,
-        pageSize,
-      });
-      const { items, pagination } = parseProductListResponse(response);
-      setProducts(items);
-      setTotal(pagination?.total ?? items.length);
-      setTotalPages(pagination?.totalPages ?? 1);
-      setCurrentPage(pagination?.page ?? newPage);
-    } catch (err) {
-      if (err instanceof ApiError) {
-        setError(err.message);
-      } else {
-        setError('获取商品列表失败');
-      }
-    } finally {
-      setLoading(false);
-    }
+  const handleSelectCategory = async (categoryId: number | null) => {
+    setSelectedCategoryId(categoryId);
+    await fetchProducts({ page: 1, keyword: searchKeyword.trim(), categoryId });
   };
 
   if (loading && products.length === 0) {
@@ -167,18 +142,59 @@ export default function ProductListPage() {
         </Button>
       </header>
 
-      {/* 搜索框 */}
-      <div className="flex gap-2">
-        <Input
-          type="text"
-          placeholder="搜索商品..."
-          value={searchKeyword}
-          onChange={(e) => setSearchKeyword(e.target.value)}
-          onKeyPress={handleKeyPress}
-          className="flex-1"
-        />
-        <Button onClick={handleSearch}>搜索</Button>
-      </div>
+      <Card className="rounded-3xl border border-border/70 bg-card">
+        <CardHeader>
+          <CardTitle>筛选</CardTitle>
+          <CardDescription>按分类筛选商品，并支持关键词搜索。</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-2">
+            <Input
+              type="text"
+              placeholder="搜索商品..."
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              onKeyDown={handleKeyPress}
+              className="flex-1"
+            />
+            <Button onClick={handleSearch}>搜索</Button>
+          </div>
+
+          <Separator />
+
+          <div className="space-y-2">
+            <div className="text-sm font-medium">产品类型</div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant={selectedCategoryId === null ? 'default' : 'outline'}
+                onClick={() => handleSelectCategory(null)}
+                disabled={categoriesLoading}
+              >
+                全部
+              </Button>
+              {categories
+                .slice()
+                .sort((a, b) => a.sort - b.sort)
+                .map((category) => (
+                  <Button
+                    key={category.id}
+                    type="button"
+                    size="sm"
+                    variant={selectedCategoryId === category.id ? 'default' : 'outline'}
+                    onClick={() => handleSelectCategory(category.id)}
+                    disabled={categoriesLoading}
+                    className="gap-2"
+                  >
+                    <span aria-hidden="true">{category.icon ?? '🏷️'}</span>
+                    <span>{category.name}</span>
+                  </Button>
+                ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {error && (
         <Alert variant="destructive">
@@ -249,71 +265,27 @@ export default function ProductListPage() {
 
       {/* 分页信息和控件 */}
       {products.length > 0 && (
-        <div className="space-y-4">
-          <div className="text-sm text-gray-600">
-            共 <span className="font-medium">{total}</span> 个商品，第{' '}
-            <span className="font-medium">{currentPage}</span> 页
-            <span className="mx-1">/</span>
-            共 <span className="font-medium">{totalPages}</span> 页
-          </div>
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  onClick={() => {
-                    if (currentPage > 1) {
-                      handlePageChange(currentPage - 1);
-                    }
-                  }}
-                  className={currentPage <= 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                />
-              </PaginationItem>
-
-              {/* 显示页码 */}
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                let pageNum: number;
-                if (totalPages <= 5) {
-                  pageNum = i + 1;
-                } else if (currentPage <= 3) {
-                  pageNum = i + 1;
-                } else if (currentPage >= totalPages - 2) {
-                  pageNum = totalPages - 4 + i;
-                } else {
-                  pageNum = currentPage - 2 + i;
-                }
-                return (
-                  <PaginationItem key={pageNum}>
-                    <PaginationLink
-                      onClick={() => handlePageChange(pageNum)}
-                      isActive={pageNum === currentPage}
-                      className="cursor-pointer"
-                    >
-                      {pageNum}
-                    </PaginationLink>
-                  </PaginationItem>
-                );
-              })}
-
-              {totalPages > 5 && currentPage < totalPages - 2 && (
-                <PaginationItem>
-                  <PaginationEllipsis />
-                </PaginationItem>
-              )}
-
-              <PaginationItem>
-                <PaginationNext
-                  onClick={() => {
-                    if (currentPage < totalPages) {
-                      handlePageChange(currentPage + 1);
-                    }
-                  }}
-                  className={currentPage >= totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
+        <ProductPagination
+          total={total}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
       )}
     </div>
+  );
+}
+
+export default function ProductListPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center">加载中...</div>
+        </div>
+      }
+    >
+      <ProductListClient />
+    </Suspense>
   );
 }
