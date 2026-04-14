@@ -5,7 +5,7 @@ import { getAllPosts } from "@/lib/posts";
 
 const featuredProjects = [
   {
-    name: "Blog Next",
+    name: "lajBlog",
     description: "基于 App Router 的博客模板，适合文章、项目与个人主页展示。",
   },
   {

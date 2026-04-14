@@ -6,8 +6,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "Blog Next",
-    template: "%s | Blog Next",
+    default: "lajBlog",
+    template: "%s | lajBlog",
   },
   description: "一个基于 Next.js App Router 的个人博客与项目展示站点。",
 };
