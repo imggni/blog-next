@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -8,55 +8,64 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
+import { PagedPagination } from '@/components/ui/paged-pagination';
 import { orderApi, ApiError } from '@/lib/api';
 import { Order } from '@/types/api';
+import { getPayStatusBadgeVariant, getPayStatusLabel, getPayTypeLabel, getOrderStatusLabel, getOrderStatusBadgeVariant } from '@/lib/mall/order-constants';
 
-const getStatusBadgeVariant = (status: string) => {
-  switch (status) {
-    case 'unpaid':
-      return 'secondary';
-    case 'paid':
-      return 'default';
-    case 'shipped':
-      return 'outline';
-    case 'delivered':
-      return 'secondary';
-    case 'cancelled':
-      return 'destructive';
-    default:
-      return 'secondary';
-  }
+type OrderListPayload =
+  | Order[]
+  | {
+      data?: Order[];
+      pagination?: {
+        page: number;
+        pageSize: number;
+        total: number;
+        totalPages: number;
+      };
+    };
+
+type OrderListApiResponse = {
+  data: OrderListPayload;
 };
 
-const getStatusText = (status: string) => {
-  switch (status) {
-    case 'unpaid':
-      return '待支付';
-    case 'paid':
-      return '已支付';
-    case 'shipped':
-      return '已发货';
-    case 'delivered':
-      return '已收货';
-    case 'cancelled':
-      return '已取消';
-    default:
-      return status;
+function parseOrderListResponse(response: OrderListApiResponse) {
+  const payload = response.data;
+  let items: Order[] = [];
+  let pagination: { page: number; pageSize: number; total: number; totalPages: number } | undefined;
+
+  if (Array.isArray(payload)) {
+    items = payload;
+  } else {
+    if (Array.isArray(payload.data)) {
+      items = payload.data;
+    }
+    pagination = payload.pagination;
   }
-};
+
+  return { items, pagination };
+}
 
 export default function OrderListPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async (page = 1) => {
     setLoading(true);
     setError('');
 
     try {
-      const response = await orderApi.getList();
-      setOrders(response.data);
+      const response = await orderApi.getList({ page, pageSize });
+      const { items, pagination } = parseOrderListResponse(response);
+      setOrders(items);
+      setTotal(pagination?.total ?? items.length);
+      setTotalPages(pagination?.totalPages ?? 1);
+      setCurrentPage(pagination?.page ?? page);
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
@@ -66,11 +75,11 @@ export default function OrderListPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [pageSize]);
 
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    fetchOrders(1);
+  }, [fetchOrders]);
 
   const handleCancelOrder = async (orderId: string) => {
     if (!confirm('确定要取消这个订单吗？')) return;
@@ -78,7 +87,7 @@ export default function OrderListPage() {
     try {
       await orderApi.cancel(orderId);
       // 重新获取订单列表
-      fetchOrders();
+      fetchOrders(currentPage);
     } catch (err) {
       if (err instanceof ApiError) {
         alert(err.message);
@@ -103,9 +112,9 @@ export default function OrderListPage() {
           <h1 className="text-3xl font-semibold tracking-tight">我的订单</h1>
           <p className="text-sm text-muted-foreground">查看和管理您的订单</p>
         </div>
-        <Button variant="outline" size="sm" asChild>
+        {/* <Button variant="outline" size="sm" asChild>
           <Link href="/mall">返回商城首页</Link>
-        </Button>
+        </Button> */}
       </header>
 
       {error && (
@@ -115,9 +124,9 @@ export default function OrderListPage() {
       )}
 
       {orders.length === 0 && !loading ? (
-        <Card>
+        <Card className="rounded-3xl border border-border/70 bg-card">
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <p className="text-gray-500 mb-4">暂无订单</p>
+            <p className="text-muted-foreground mb-4">暂无订单</p>
             <Button asChild>
               <Link href="/mall/product">去购物</Link>
             </Button>
@@ -125,99 +134,100 @@ export default function OrderListPage() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {orders.map((order) => (
-            <Card key={order.id}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg">订单号: {order.id}</CardTitle>
-                    <CardDescription>
-                      下单时间: {new Date(order.createdAt).toLocaleString()}
-                    </CardDescription>
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-border/70 bg-card px-5 py-4 text-sm text-muted-foreground">
+            <div>
+              共 <span className="font-medium text-foreground">{total}</span> 笔订单，第{" "}
+              <span className="font-medium text-foreground">{currentPage}</span> /{" "}
+              <span className="font-medium text-foreground">{totalPages}</span> 页
+            </div>
+            <div>每页 {pageSize} 条</div>
+          </div>
+
+          {orders.map((order) => {
+            const isCancelable = order.payStatus === 'pending' || order.payStatus === 'unpaid';
+            const items = order.orderGoods.slice(0, 2);
+            const moreCount = Math.max(0, order.orderGoods.length - items.length);
+
+            return (
+              <Card key={order.id} className="rounded-3xl border border-border/70 bg-card">
+                <CardHeader className="space-y-3">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <CardTitle className="text-base">订单号：{order.id}</CardTitle>
+                      <CardDescription>下单时间：{new Date(order.createdAt).toLocaleString()}</CardDescription>
+                    </div>
+                    <div className="flex items-center gap-2">
+                    <Badge variant={getPayStatusBadgeVariant(order.payStatus)}>{getPayStatusLabel(order.payStatus)}</Badge>
+                    <Badge variant={getOrderStatusBadgeVariant(order.orderStatus)}>{getOrderStatusLabel(order.orderStatus)}</Badge>
+                    <Badge variant="outline">{getPayTypeLabel(order.payType)}</Badge>
+                    </div>
                   </div>
-                  <Badge variant={getStatusBadgeVariant(order.payStatus)}>
-                    {getStatusText(order.payStatus)}
-                  </Badge>
-                </div>
-              </CardHeader>
 
-              <CardContent className="space-y-4">
-                {/* 收货地址 */}
-                <div>
-                  <h4 className="font-semibold mb-2">收货地址</h4>
-                  <p className="text-sm text-gray-600">
-                    {order.address.name} {order.address.phone}<br />
-                    {order.address.province} {order.address.city} {order.address.district}<br />
-                    {order.address.detailAddress}
-                  </p>
-                </div>
+                  <div className="grid gap-2 rounded-2xl bg-muted/30 p-4 text-sm">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="text-muted-foreground">
+                        收货人：<span className="text-foreground">{order.address.name}</span>{" "}
+                        <span className="ml-2">{order.address.phone}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-muted-foreground">总计</span>{" "}
+                        <span className="text-lg font-semibold text-foreground">¥{order.totalPrice}</span>
+                      </div>
+                    </div>
+                    <div className="text-muted-foreground">
+                      地址：{order.address.province} {order.address.city} {order.address.district} {order.address.detailAddress}
+                    </div>
+                  </div>
+                </CardHeader>
 
-                <Separator />
-
-                {/* 商品列表 */}
-                <div>
-                  <h4 className="font-semibold mb-2">商品清单</h4>
+                <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    {order.orderGoods.map((item) => (
-                      <div key={item.id} className="flex items-center gap-4 p-2 bg-gray-50 rounded">
-                        <div className="w-12 h-12 bg-gray-200 rounded flex-shrink-0">
+                    {items.map((item) => (
+                      <div key={item.id} className="flex items-center gap-4 rounded-2xl border border-border/70 bg-background/60 p-3">
+                        <div className="relative h-12 w-12 overflow-hidden rounded-xl bg-muted">
                           <Image
                             src={item.productImage}
                             alt={item.productTitle}
-                            width={48}
-                            height={48}
+                            fill
                             sizes="48px"
-                            className="h-full w-full object-cover rounded"
+                            className="object-cover"
                           />
                         </div>
-                        <div className="flex-1">
-                          <p className="font-medium">{item.productTitle}</p>
-                          {item.specs && (
-                            <p className="text-sm text-gray-600">规格: {item.specs}</p>
-                          )}
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-sm font-medium">{item.productTitle}</div>
+                          {item.specs ? <div className="truncate text-xs text-muted-foreground">规格：{item.specs}</div> : null}
                         </div>
-                        <div className="text-right">
-                          <p className="font-medium">¥{item.price} × {item.quantity}</p>
-                          <p className="text-sm text-gray-600">小计: ¥{item.subtotal}</p>
+                        <div className="text-right text-sm">
+                          <div className="font-medium">¥{item.price} × {item.quantity}</div>
+                          <div className="text-xs text-muted-foreground">小计：¥{item.subtotal}</div>
                         </div>
                       </div>
                     ))}
+                    {moreCount > 0 ? (
+                      <div className="text-xs text-muted-foreground">还有 {moreCount} 件商品，进入详情查看</div>
+                    ) : null}
                   </div>
-                </div>
 
-                <Separator />
+                  <Separator />
 
-                {/* 订单金额 */}
-                <div className="flex justify-between items-center">
-                  <div className="text-sm text-gray-600">
-                    <p>商品金额: ¥{order.goodsPrice}</p>
-                    <p>运费: ¥{order.freight}</p>
-                    <p>优惠: ¥{order.discount}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-lg font-bold">总计: ¥{order.totalPrice}</p>
-                    <p className="text-sm text-gray-600">支付方式: {order.payType}</p>
-                  </div>
-                </div>
-
-                {/* 操作按钮 */}
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href={`/mall/order/${order.id}`}>查看详情</Link>
-                  </Button>
-                  {order.payStatus === 'pending' && (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleCancelOrder(order.id)}
-                    >
-                      取消订单
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href={`/mall/order/${order.id}`}>查看详情</Link>
                     </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                    {isCancelable ? (
+                      <Button variant="destructive" size="sm" onClick={() => handleCancelOrder(order.id)}>
+                        取消订单
+                      </Button>
+                    ) : null}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+
+          {totalPages >= 1 ? (
+            <PagedPagination currentPage={currentPage} totalPages={totalPages} onPageChange={fetchOrders} />
+          ) : null}
         </div>
       )}
     </div>

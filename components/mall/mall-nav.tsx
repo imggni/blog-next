@@ -68,7 +68,7 @@ export function MallNav() {
     <header className="border-b border-border/70 bg-background/95 backdrop-blur">
       <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-4">
         <Link href="/mall" className="text-lg font-semibold tracking-tight">
-          Mall
+          lajMall
         </Link>
 
         <nav className="flex flex-wrap items-center gap-2">

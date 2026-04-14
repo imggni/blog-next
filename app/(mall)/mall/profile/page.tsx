@@ -150,7 +150,7 @@ export default function MallProfilePage() {
             </CardHeader>
             <CardContent className="space-y-2">
               <Button variant="outline" className="w-full justify-start" asChild>
-                <Link href="/mall/orders">
+                <Link href="/mall/order">
                   <span>我的订单</span>
                 </Link>
               </Button>
@@ -211,7 +211,7 @@ export default function MallProfilePage() {
           </CardHeader>
           <CardContent>
             <Button asChild>
-              <Link href="/mall/orders">查看订单</Link>
+              <Link href="/mall/order">查看订单</Link>
             </Button>
           </CardContent>
         </Card>

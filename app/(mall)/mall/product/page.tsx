@@ -14,6 +14,7 @@ import { Waterfall } from '@/components/ui/waterfall';
 import { ProductPagination } from '@/components/mall/product-pagination';
 import { categoryApi, productApi, ApiError } from '@/lib/api';
 import type { Category, Product } from '@/types/api';
+import { CategoryIcon } from '@/components/mall/category-icon';
 
 type ProductListPayload =
   | Product[]
@@ -187,7 +188,7 @@ function ProductListClient() {
                     disabled={categoriesLoading}
                     className="gap-2"
                   >
-                    <span aria-hidden="true">{category.icon ?? '🏷️'}</span>
+                    <CategoryIcon icon={category.icon} name={category.name} size={14} />
                     <span>{category.name}</span>
                   </Button>
                 ))}
@@ -202,7 +203,7 @@ function ProductListClient() {
         </Alert>
       )}
 
-      <Waterfall className="gap-6" minColumnWidth="18rem" gap="1.5rem">
+      <Waterfall className="gap-6" minColumnWidth="16rem" gap="1rem">
         {products.map((product) => (
           <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow pt-0">
             <div className="relative aspect-square">

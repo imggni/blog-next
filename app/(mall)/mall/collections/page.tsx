@@ -57,9 +57,9 @@ export default function CollectionManagementPage() {
           <h1 className="text-3xl font-semibold tracking-tight">我的收藏</h1>
           <p className="text-sm text-muted-foreground">查看和管理您收藏的商品，快速进入购物或取消收藏。</p>
         </div>
-        <Button variant="outline" size="sm" asChild>
+        {/* <Button variant="outline" size="sm" asChild>
           <Link href="/mall/profile">返回个人中心</Link>
-        </Button>
+        </Button> */}
       </header>
 
       {error && (
@@ -125,7 +125,7 @@ export default function CollectionManagementPage() {
 
                     <Separator />
 
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap flex-end justify-end items-center gap-2">
                       <Button variant="destructive" size="sm" onClick={() => handleRemove(item.productId)}>
                         取消收藏
                       </Button>

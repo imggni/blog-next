@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,12 +8,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { CategoryList } from '@/components/mall/category-list';
 import { MallSearch } from "@/components/mall/mall-search";
+import { productApi } from "@/lib/api";
+import type { Product } from "@/types/api";
 
 export const metadata: Metadata = {
   title: "炫酷商城首页",
   description: "数字配件商城首页，展示热门商品、分类推荐与限时优惠。",
 };
 
+export const dynamic = "force-dynamic";
 
 const highlights = [
   {
@@ -32,28 +36,16 @@ const highlights = [
   },
 ];
 
-const products = [
-  {
-    name: "炫彩机械键盘",
-    price: "¥399",
-    tag: "热销",
-    description: "RGB 背光 + 轻量轴体，畅快输入体验。",
-  },
-  {
-    name: "高保真无线耳机",
-    price: "¥599",
-    tag: "爆款",
-    description: "主动降噪，长续航，沉浸音质。",
-  },
-  {
-    name: "迷你游戏手柄",
-    price: "¥249",
-    tag: "新品",
-    description: "掌控手感与响应速度，手游神器。",
-  },
-];
+export default async function MallHomePage() {
+  let hotProducts: Product[] = [];
+  try {
+    const res = await productApi.getList({ isHot: true, pageSize: 20 });
+    const items = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+    hotProducts = (items.sort(() => 0.5 - Math.random()).slice(0, 3) as Product[]);
+  } catch {
+    hotProducts = [];
+  }
 
-export default function MallHomePage() {
   return (
     <div className="space-y-12">
       <section className="overflow-hidden rounded-[2rem] border border-border/70 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 px-6 py-10 text-white shadow-2xl shadow-slate-950/20 md:px-12 md:py-16">
@@ -154,24 +146,47 @@ export default function MallHomePage() {
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {products.map((product) => (
-            <Card key={product.name} className="group overflow-hidden rounded-[1.75rem] border border-border/70 bg-card p-6 transition hover:-translate-y-1 hover:shadow-xl">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <CardTitle className="text-xl font-semibold">{product.name}</CardTitle>
-                  <CardDescription className="mt-2 text-sm text-muted-foreground">{product.description}</CardDescription>
-                </div>
-                <Badge className="rounded-full bg-emerald-500/10 text-emerald-400">{product.tag}</Badge>
-              </div>
-              <div className="mt-6 flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-2xl font-bold text-slate-900 dark:text-white">{product.price}</p>
-                  <p className="text-sm text-slate-500">热度持续上升</p>
-                </div>
-                <Button variant="secondary" size="sm">加入购物车</Button>
-              </div>
-            </Card>
-          ))}
+          {hotProducts.length > 0 ? (
+            hotProducts.map((product) => (
+              <Card key={product.id} className="group pt-0 overflow-hidden rounded-[1.75rem] border border-border/70 bg-card transition hover:-translate-y-1 hover:shadow-xl">
+                <Link href={`/mall/product/${product.id}`} className="block">
+                  <div className="relative aspect-video w-full overflow-hidden bg-muted/30">
+                    <Image
+                      src={product.mainImage}
+                      alt={product.title}
+                      fill
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                    />
+                  </div>
+                  <div className="p-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <CardTitle className="line-clamp-1 text-xl font-semibold">{product.title}</CardTitle>
+                        <CardDescription className="line-clamp-2 mt-2 text-sm text-muted-foreground">
+                          {product.description || "暂无描述"}
+                        </CardDescription>
+                      </div>
+                      <Badge className="shrink-0 rounded-full bg-emerald-500/10 text-emerald-400">热销</Badge>
+                    </div>
+                    <div className="mt-6 flex items-center justify-between gap-4">
+                      <div>
+                        <p className="text-2xl font-bold text-slate-900 dark:text-white">¥{product.price}</p>
+                        <p className="text-sm text-slate-500">已售 {product.sales} 件</p>
+                      </div>
+                      <Button variant="secondary" size="sm" asChild>
+                        <span>立即查看</span>
+                      </Button>
+                    </div>
+                  </div>
+                </Link>
+              </Card>
+            ))
+          ) : (
+            <div className="col-span-full py-12 text-center text-muted-foreground">
+              暂无热门推荐商品
+            </div>
+          )}
         </div>
       </section>
     </div>

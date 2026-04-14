@@ -3,8 +3,9 @@
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { useCategories } from '@/hooks/useCategories';
-import { Button } from '@/components/ui/button';
+// import { Button } from '@/components/ui/button';
 import { CategoryIcon } from "@/components/mall/category-icon";
+import { ArrowRight } from "lucide-react";
 
 export function CategoryList() {
   const { categories, loading } = useCategories();
@@ -21,10 +22,10 @@ export function CategoryList() {
               <p className="mt-2 text-sm text-muted-foreground">精选好物，极速配货</p>
             </div>
             <div className="flex items-center justify-between">
-              <CategoryIcon icon={cat.icon} name={cat.name} size={80} />
-              <Button size="sm" asChild>
-                <Link href={`/mall/product?categoryId=${cat.id}`}>查看</Link>
-              </Button>
+              <CategoryIcon icon={cat.icon} name={cat.name} size={40} />
+              <Link href={`/mall/product?categoryId=${cat.id}`}> <ArrowRight /></Link>
+              {/* <Button size="sm" asChild>
+              </Button> */}
             </div>
           </div>
         </Card>

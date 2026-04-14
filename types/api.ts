@@ -206,3 +206,36 @@ export interface CollectionItem {
   createdAt: string;
   product: Product;
 }
+
+// 通用分页类型
+export interface Pagination {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: Pagination;
+}
+
+// 列表查询参数/响应类型
+export interface ProductListParams {
+  categoryId?: number;
+  keyword?: string;
+  isHot?: boolean;
+  isNew?: boolean;
+  all?: boolean;
+  page?: number;
+  pageSize?: number;
+}
+
+export type ProductListResponse = Product[] | PaginatedResponse<Product>;
+
+export interface OrderListParams {
+  page?: number;
+  pageSize?: number;
+}
+
+export type OrderListResponse = Order[] | PaginatedResponse<Order>;

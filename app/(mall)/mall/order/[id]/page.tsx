@@ -4,46 +4,14 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { orderApi, ApiError } from '@/lib/api';
 import { Order } from '@/types/api';
-
-const getStatusBadgeVariant = (status: string) => {
-  switch (status) {
-    case 'pending':
-      return 'secondary';
-    case 'paid':
-      return 'default';
-    case 'shipped':
-      return 'outline';
-    case 'delivered':
-      return 'secondary';
-    case 'cancelled':
-      return 'destructive';
-    default:
-      return 'secondary';
-  }
-};
-
-const getStatusText = (status: string) => {
-  switch (status) {
-    case 'pending':
-      return '待支付';
-    case 'paid':
-      return '已支付';
-    case 'shipped':
-      return '已发货';
-    case 'delivered':
-      return '已收货';
-    case 'cancelled':
-      return '已取消';
-    default:
-      return status;
-  }
-};
+import { getPayStatusBadgeVariant, getPayStatusLabel, getPayTypeLabel, getOrderStatusLabel, getOrderStatusBadgeVariant } from '@/lib/mall/order-constants';
 
 export default function OrderDetailPage() {
   const params = useParams();
@@ -141,30 +109,22 @@ export default function OrderDetailPage() {
                 <div>
                   <label className="text-sm font-medium text-gray-600">订单状态</label>
                   <div className="mt-1">
-                    <Badge variant={getStatusBadgeVariant(order.payStatus)}>
-                      {getStatusText(order.payStatus)}
+                    <Badge variant={getOrderStatusBadgeVariant(order.orderStatus)}>
+                      {getOrderStatusLabel(order.orderStatus)}
                     </Badge>
                   </div>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-600">支付状态</label>
                   <div className="mt-1">
-                    <Badge variant={getStatusBadgeVariant(order.payStatus)}>
-                      {getStatusText(order.payStatus)}
-                    </Badge>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-600">订单状态</label>
-                  <div className="mt-1">
-                    <Badge variant={getStatusBadgeVariant(order.orderStatus)}>
-                      {getStatusText(order.orderStatus)}
+                    <Badge variant={getPayStatusBadgeVariant(order.payStatus)}>
+                      {getPayStatusLabel(order.payStatus)}
                     </Badge>
                   </div>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-600">支付方式</label>
-                  <p className="mt-1">{order.payType}</p>
+                  <p className="mt-1">{getPayTypeLabel(order.payType)}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-600">下单时间</label>
@@ -209,6 +169,7 @@ export default function OrderDetailPage() {
                   <div key={item.id} className="flex items-center gap-4 p-4 border rounded-lg">
                     <div className="w-16 h-16 bg-gray-200 rounded flex-shrink-0">
                       {/* 这里可以添加商品图片 */}
+                      <Image src={item.productImage} alt={item.productTitle} width={80} height={80} />
                     </div>
                     <div className="flex-1">
                       <h4 className="font-medium">{item.productTitle}</h4>
