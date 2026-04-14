@@ -5,7 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { categoryApi, ApiError } from '@/lib/api';
 
-export function CategoryForm({ initial, onSaved }:{ initial?: any; onSaved?: () => void }){
+type CategoryFormInitial = Awaited<ReturnType<typeof categoryApi.getList>>['data'][number];
+
+export function CategoryForm({ initial, onSaved }:{ initial?: CategoryFormInitial; onSaved?: () => void }){
   const [form, setForm] = useState({ name: initial?.name ?? '', icon: initial?.icon ?? '', sort: initial?.sort ?? 0 });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

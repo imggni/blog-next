@@ -6,8 +6,10 @@ import { orderApi, ApiError } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
+type OrderItem = Awaited<ReturnType<typeof orderApi.getList>>['data'][number];
+
 export default function AdminOrderPage(){
-  const [orders, setOrders] = useState<any[]>([]);
+  const [orders, setOrders] = useState<OrderItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string|null>(null);
 
@@ -17,8 +19,7 @@ export default function AdminOrderPage(){
       setLoading(true);
       try{
         const res = await orderApi.getList();
-        const data = (res as any)?.data ?? res;
-        if (Array.isArray(data) && mounted) setOrders(data);
+        if (mounted) setOrders(res.data);
       }catch(err){ if (err instanceof ApiError) setError(err.message); else setError('获取订单失败') }
       finally{ if (mounted) setLoading(false) }
     };
@@ -40,14 +41,14 @@ export default function AdminOrderPage(){
           {loading && <div>加载中...</div>}
           {error && <div className="text-red-500">{error}</div>}
           <div className="mt-4 grid gap-3">
-            {orders.map(o=> (
-              <div key={o.id} className="flex items-center justify-between rounded-lg border p-3">
+            {orders.map((order) => (
+              <div key={order.id} className="flex items-center justify-between rounded-lg border p-3">
                 <div>
-                  <div className="font-medium">订单号: {o.orderNo}</div>
-                  <div className="text-sm text-muted-foreground">金额: {o.amount}</div>
+                  <div className="font-medium">订单号: {order.id}</div>
+                  <div className="text-sm text-muted-foreground">金额: {order.totalPrice}</div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button asChild size="sm"><Link href={`/mall/admin/order/${o.id}`}>查看</Link></Button>
+                  <Button asChild size="sm"><Link href={`/mall/admin/order/${order.id}`}>查看</Link></Button>
                 </div>
               </div>
             ))}

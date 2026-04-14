@@ -5,8 +5,10 @@ import { useRouter } from 'next/navigation';
 import { ProductForm } from '@/components/mall/admin/product-form';
 import { productApi } from '@/lib/api';
 
+type ProductDetail = Awaited<ReturnType<typeof productApi.getDetail>>['data'];
+
 export default function EditProductPage({ params }: { params: { id: string } }){
-  const [initial, setInitial] = useState<any>(null);
+  const [initial, setInitial] = useState<ProductDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -15,9 +17,8 @@ export default function EditProductPage({ params }: { params: { id: string } }){
     const fetch = async ()=>{
       try{
         const res = await productApi.getDetail(Number(params.id));
-        const data = (res as any)?.data ?? res;
-        if (mounted) setInitial(data);
-      }catch(e){}
+        if (mounted) setInitial(res.data);
+      }catch{}
       finally{ if (mounted) setLoading(false); }
     };
     fetch();

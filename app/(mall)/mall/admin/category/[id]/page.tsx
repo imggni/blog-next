@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { use } from 'react';
 import { CategoryForm } from '@/components/mall/admin/category-form';
-import { categoryApi, ApiError } from '@/lib/api';
+import { categoryApi } from '@/lib/api';
+
+type CategoryItem = Awaited<ReturnType<typeof categoryApi.getList>>['data'][number];
 
 export default function EditCategoryPage({ params }: { params: { id: string } }){
-  const [initial, setInitial] = useState<any>(null);
+  const [initial, setInitial] = useState<CategoryItem | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -16,10 +17,9 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
     const fetch = async ()=>{
       try{
         const res = await categoryApi.getList();
-        const data = (res as any)?.data ?? res;
-        const found = Array.isArray(data)? data.find((c:any)=> String(c.id)===String(params.id)) : null;
+        const found = res.data.find((category) => String(category.id) === String(params.id)) ?? null;
         if (mounted) setInitial(found);
-      }catch(e){}
+      }catch{}
       finally{ if (mounted) setLoading(false); }
     };
     fetch();

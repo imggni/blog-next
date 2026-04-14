@@ -9,21 +9,35 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { userApi, ApiError } from '@/lib/api';
+import { useAuthStore } from '@/hooks/use-auth-store';
 import { UserInfoData } from '@/types/api';
-import { getStoredUser, clearAuthStorage } from '@/lib/auth';
 import { toast } from 'sonner';
 
 export default function MallProfilePage() {
   const router = useRouter();
+  const isHydrated = useAuthStore((state) => state.isHydrated);
+  const token = useAuthStore((state) => state.token);
+  const clearAuth = useAuthStore((state) => state.clearAuth);
+  const setUserFromInfo = useAuthStore((state) => state.setUserFromInfo);
   const [userInfo, setUserInfo] = useState<UserInfoData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
 
   useEffect(() => {
+    if (!isHydrated) {
+      return;
+    }
+
+    if (!token) {
+      router.replace('/mall/login');
+      return;
+    }
+
     const fetchUserInfo = async () => {
       try {
         const response = await userApi.getInfo();
         setUserInfo(response.data);
+        setUserFromInfo(response.data);
       } catch (err) {
         const message = err instanceof ApiError ? err.message : '获取用户信息失败';
         setError(message);
@@ -33,22 +47,16 @@ export default function MallProfilePage() {
       }
     };
 
-    const storedUser = getStoredUser();
-    if (!storedUser) {
-      router.push('/mall/login');
-      return;
-    }
-
     fetchUserInfo();
-  }, [router]);
+  }, [isHydrated, router, setUserFromInfo, token]);
 
   const handleLogout = () => {
-    clearAuthStorage();
+    clearAuth();
     toast.success('已退出登录');
     router.push('/mall');
   };
 
-  if (loading) {
+  if (!isHydrated || loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
@@ -166,6 +174,35 @@ export default function MallProfilePage() {
       </div>
 
       {/* 其他功能模块 */}
+      {userInfo.isAdmin ? (
+        <Card className="border border-border/70 bg-card">
+          <CardHeader>
+            <CardTitle>管理员入口</CardTitle>
+            <CardDescription>仅管理员可见，进入商城后台进行管理操作</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              当前账号拥有后台管理权限，可管理商品、订单和分类。
+            </p>
+            <Button asChild className="w-full">
+              <Link href="/mall/admin">进入后台管理</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="border border-border/70 bg-card">
+          <CardHeader>
+            <CardTitle>管理员功能</CardTitle>
+            <CardDescription>您当前不是管理员，后台入口不可见</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              只有管理员账户才能访问后台管理页面和管理员操作。
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader>

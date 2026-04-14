@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -12,55 +12,49 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
-import { userApi, ApiError } from '@/lib/api';
-import { clearAuthStorage, getStoredUser, setAuthStorage, StoredUser } from '@/lib/auth';
+import { userApi } from '@/lib/api';
+import { useAuthStore } from '@/hooks/use-auth-store';
 
 const mallNavigationItems = [
   { href: '/mall', label: '商城首页' },
   { href: '/mall/product', label: '商品' },
   { href: '/mall/order', label: '订单' },
-  { href: '/mall/collection', label: '收藏' },
+  { href: '/mall/collections', label: '收藏' },
   { href: '/mall/profile', label: '个人中心' },
-  { href: '/mall/admin', label: '后台' },
+  { href: '/mall/admin', label: '后台', adminOnly: true },
 ];
 
 export function MallNav() {
   const router = useRouter();
-  const [user, setUser] = useState<StoredUser | null>(null);
+  const isHydrated = useAuthStore((state) => state.isHydrated);
+  const token = useAuthStore((state) => state.token);
+  const user = useAuthStore((state) => state.user);
+  const clearAuth = useAuthStore((state) => state.clearAuth);
+  const setUserFromInfo = useAuthStore((state) => state.setUserFromInfo);
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    const storedUser = getStoredUser();
-    if (storedUser) {
-      setUser(storedUser);
+    if (!isHydrated || !token || user) {
       return;
     }
 
     userApi
       .getInfo()
       .then((response) => {
-        const nextUser: StoredUser = {
-          username: response.data.username || response.data.phone,
-          phone: response.data.phone,
-          isAdmin: response.data.isAdmin,
-          avatar: response.data.avatar,
-        };
-        setAuthStorage(window.localStorage.getItem('mall_token') ?? '', nextUser);
-        setUser(nextUser);
+        setUserFromInfo(response.data);
       })
       .catch(() => {
-        clearAuthStorage();
-        setUser(null);
+        clearAuth();
       });
-  }, []);
+  }, [clearAuth, isHydrated, setUserFromInfo, token, user]);
 
   const handleLogout = () => {
-    clearAuthStorage();
-    setUser(null);
+    clearAuth();
     setMenuOpen(false);
     router.push('/mall/login');
   };
 
+  const isAuthenticated = Boolean(token);
   const initials = user?.username
     ? user.username
         .split(' ')
@@ -78,27 +72,30 @@ export function MallNav() {
         </Link>
 
         <nav className="flex flex-wrap items-center gap-2">
-          {mallNavigationItems.map((item) => (
-            <Button key={item.href} variant="ghost" size="sm" asChild>
-              <Link href={item.href}>{item.label}</Link>
-            </Button>
-          ))}
+          {mallNavigationItems
+            .filter((item) => !item.adminOnly || user?.isAdmin)
+            .map((item) => (
+              <Button key={item.href} variant="ghost" size="sm" asChild>
+                <Link href={item.href}>{item.label}</Link>
+              </Button>
+            ))}
         </nav>
 
         <div className="flex items-center gap-2">
-          {user ? (
+          {isHydrated && isAuthenticated ? (
             <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
               <div
                 onMouseEnter={() => setMenuOpen(true)}
                 onMouseLeave={() => setMenuOpen(false)}
                 className="relative"
               >
-                <DropdownMenuTrigger asChild>
+                <DropdownMenuTrigger asChild>   
                   <Button className="inline-flex items-center gap-2 rounded-full px-3" variant="ghost" size="sm">
                     <Avatar size="sm">
+                      <AvatarImage src="https://avatars.githubusercontent.com/u/124599?v=4" alt="shadcn" />
                       <AvatarFallback>{initials}</AvatarFallback>
                     </Avatar>
-                    <span className="hidden min-w-24 truncate sm:inline">{user.username}</span>
+                    {user?.username ?? '账户'}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
@@ -108,7 +105,7 @@ export function MallNav() {
                   <DropdownMenuItem asChild>
                     <Link href="/mall/order">我的订单</Link>
                   </DropdownMenuItem>
-                  {user.isAdmin ? (
+                  {user?.isAdmin ? (
                     <DropdownMenuItem asChild>
                       <Link href="/mall/admin">后台管理</Link>
                     </DropdownMenuItem>
@@ -120,7 +117,7 @@ export function MallNav() {
                 </DropdownMenuContent>
               </div>
             </DropdownMenu>
-          ) : (
+          ) : isHydrated ? (
             <>
               <Button variant="outline" size="sm" asChild>
                 <Link href="/mall/login">登录</Link>
@@ -129,7 +126,7 @@ export function MallNav() {
                 <Link href="/mall/register">注册</Link>
               </Button>
             </>
-          )}
+          ) : null}
         </div>
       </div>
     </header>

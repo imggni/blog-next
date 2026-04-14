@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,11 +9,15 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { userApi, ApiError } from '@/lib/api';
+import { useAuthStore } from '@/hooks/use-auth-store';
 import { UserRegisterRequest } from '@/types/api';
-import { setAuthStorage, StoredUser } from '@/lib/auth';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const isHydrated = useAuthStore((state) => state.isHydrated);
+  const token = useAuthStore((state) => state.token);
+  const user = useAuthStore((state) => state.user);
+  const setAuthFromLoginData = useAuthStore((state) => state.setAuthFromLoginData);
   const [formData, setFormData] = useState<UserRegisterRequest>({
     phone: '',
     code: '',
@@ -20,6 +25,14 @@ export default function RegisterPage() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
+
+  useEffect(() => {
+    if (!isHydrated || !token) {
+      return;
+    }
+
+    router.replace(user?.isAdmin ? '/mall/admin' : '/mall');
+  }, [isHydrated, router, token, user?.isAdmin]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -36,15 +49,7 @@ export default function RegisterPage() {
 
     try {
       const response = await userApi.register(formData);
-      const token = response.data.token;
-      const nextUser: StoredUser = {
-        username: response.data.username || response.data.phone,
-        phone: response.data.phone,
-        isAdmin: response.data.isAdmin,
-        avatar: response.data.avatar,
-      };
-
-      setAuthStorage(token, nextUser);
+      setAuthFromLoginData(response.data);
 
       router.push('/mall');
     } catch (err) {
@@ -119,9 +124,9 @@ export default function RegisterPage() {
           <div className="mt-4 text-center">
             <p className="text-sm text-gray-600">
               已有账号？
-              <a href="/mall/login" className="text-blue-600 hover:underline">
+              <Link href="/mall/login" className="text-blue-600 hover:underline">
                 立即登录
-              </a>
+              </Link>
             </p>
           </div>
         </CardContent>

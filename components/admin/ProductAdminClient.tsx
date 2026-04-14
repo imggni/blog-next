@@ -5,12 +5,16 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { productApi, ApiError } from '@/lib/api';
+import type { Product } from '@/types/api';
 
-interface Product {
-  id: string;
-  title: string;
-  category?: { name: string } | string;
-  categoryId?: string;
+type ProductListResponse = Awaited<ReturnType<typeof productApi.getList>>['data'];
+
+function normalizeProducts(data: ProductListResponse): Product[] {
+  if (Array.isArray(data)) {
+    return data as Product[];
+  }
+
+  return data.data as Product[];
 }
 
 export default function ProductAdminClient() {
@@ -24,14 +28,7 @@ export default function ProductAdminClient() {
       setLoading(true);
       try {
         const res = await productApi.getList({ all: true });
-        const data = (res as any)?.data ?? res;
-        if (Array.isArray(data)) {
-          if (mounted) setProducts(data);
-        } else if (Array.isArray((data as any)?.data)) {
-          if (mounted) setProducts((data as any).data);
-        } else {
-          if (mounted) setProducts([]);
-        }
+        if (mounted) setProducts(normalizeProducts(res.data));
       } catch (err) {
         if (err instanceof ApiError) setError(err.message);
         else setError('获取商品失败');
@@ -68,7 +65,9 @@ export default function ProductAdminClient() {
               <div key={p.id} className="flex items-center justify-between rounded-lg border p-3">
                 <div>
                   <div className="font-medium">{p.title}</div>
-                  <div className="text-sm text-muted-foreground">类别: {p.categoryId || (typeof p.category === 'string' ? p.category : p.category?.name)}</div>
+                  <div className="text-sm text-muted-foreground">
+                    类别: {p.category?.name ?? p.categoryId}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Button size="sm">编辑</Button>

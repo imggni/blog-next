@@ -1,30 +1,47 @@
 ---
 name: nextjs-specific
-description: Next.js（App Router）规则（精简）
+description: Next.js App Router + TypeScript + shadcn/ui + Zustand 项目规范
 scope: project
 paths:
-  - "app/**/*.tsx"
-  - "app/**/*.ts"
-  - "components/**/*.tsx"
-  - "lib/**/*.ts"
-  - "lib/**/*.tsx"
+  - "src/app/**/*.tsx"
+  - "src/app/**/*.ts"
+  - "src/components/**/*.tsx"
+  - "src/hooks/**/*.ts"
+  - "src/lib/**/*.ts"
+  - "src/types/**/*.ts"
 ---
 
-# 一、通用强制规范（所有前端代码必须遵守）
-- TS 严格模式；禁止 any，绕过时必须注释原因
-- const 优先；async/await + try/catch；生产无 console.log
-- 命名：组件/类型 PascalCase，变量/函数/Hooks camelCase
-- 结构：单文件精简；复杂逻辑拆 hooks/utils；禁止魔法值
-- 导入顺序：第三方 → 内部模块 → 样式
-- 样式：CSS Modules/Tailwind；禁止全局污染、内联样式
-- 请求：统一封装；页面不直连接口
-- 安全：避免 dangerouslySetInnerHTML；用户输入校验
-- 性能：列表 key 用稳定 id；按需优化；懒加载
+# 项目规范（必须严格遵守）
 
-# 二、Next.js(App Router) 专属规范
-- 严格区分服务端/客户端组件；仅必要时加 "use client"
-- 遵循 App Router 约定：page/layout/route；动态路由参数显式类型
-- 数据获取：服务端优先；客户端请求统一封装 loading/error
-- 环境变量：严格区分客户端(NEXT_PUBLIC_)与服务端变量
-- API 接口必须做参数校验；敏感逻辑仅放在服务端
+## 技术栈
+- Next.js 14+ App Router
+- TypeScript
+- shadcn/ui（仅通过 CLI 安装）
+- Tailwind CSS v3
+- Zustand 全局状态管理
 
+## 目录结构（严格遵守）
+- src/app/             页面路由
+- src/components/      业务组件
+  - src/components/ui/ shadcn/ui 组件
+- src/hooks/           自定义 Hooks + ZUSTAND STORE
+- src/lib/             工具函数
+- src/types/           TS 类型定义
+
+## 核心规则（AI 必须 100% 执行）
+1. 交互组件、状态组件必须加 'use client'
+2. 静态页面优先使用服务端组件
+3. **Zustand 必须放在 src/hooks/ 下**
+   命名格式：use[Feature]Store.ts
+   持久化使用 persist middleware
+4. 组件使用命名导出
+5. 样式只使用 Tailwind
+6. 不允许修改 shadcn/ui 原始文件，只能扩展
+7. 组件保持单一职责
+8. 导入使用 @ 路径别名
+
+## 代码风格
+- 使用箭头函数组件
+- 类型定义清晰
+- 变量语义化
+- 组件结构清晰

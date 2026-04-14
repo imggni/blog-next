@@ -1,4 +1,5 @@
 import { ApiResponse } from '@/types/api';
+import { getStoredToken } from '@/lib/auth';
 
 // 错误处理类
 export class ApiError extends Error {
@@ -26,7 +27,7 @@ async function apiRequest<T>(
   };
 
   // 添加认证token（如果存在）
-  const token = localStorage?.getItem('token');
+  const token = getStoredToken();
   if (token) {
     config.headers = {
       ...config.headers,

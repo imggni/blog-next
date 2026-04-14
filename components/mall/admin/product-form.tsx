@@ -5,7 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { productApi, ApiError } from '@/lib/api';
 
-export function ProductForm({ initial, onSaved }: { initial?: any; onSaved?: ()=>void }) {
+type ProductFormInitial = Awaited<ReturnType<typeof productApi.getDetail>>['data'];
+
+export function ProductForm({ initial, onSaved }: { initial?: ProductFormInitial; onSaved?: ()=>void }) {
   const [form, setForm] = useState({
     title: initial?.title ?? '',
     price: initial?.price ?? '',
