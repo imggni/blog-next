@@ -1,12 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { userApi, ApiError } from '@/lib/api';
 import { useAuthStore } from '@/hooks/use-auth-store';
@@ -22,6 +25,13 @@ export default function MallProfilePage() {
   const [userInfo, setUserInfo] = useState<UserInfoData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
+  const [editInfoOpen, setEditInfoOpen] = useState(false);
+  const [editUsername, setEditUsername] = useState('');
+  const [savingInfo, setSavingInfo] = useState(false);
+  const [avatarOpen, setAvatarOpen] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState('');
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   useEffect(() => {
     if (!isHydrated) {
@@ -50,10 +60,88 @@ export default function MallProfilePage() {
     fetchUserInfo();
   }, [isHydrated, router, setUserFromInfo, token]);
 
+  useEffect(() => {
+    if (!editInfoOpen) return;
+    setEditUsername(userInfo?.username ?? '');
+  }, [editInfoOpen, userInfo]);
+
+  useEffect(() => {
+    if (!avatarOpen) return;
+    setAvatarFile(null);
+    setAvatarPreviewUrl('');
+  }, [avatarOpen]);
+
+  useEffect(() => {
+    if (!avatarPreviewUrl) return;
+    return () => URL.revokeObjectURL(avatarPreviewUrl);
+  }, [avatarPreviewUrl]);
+
+  const refreshUserInfo = async () => {
+    try {
+      const response = await userApi.getInfo();
+      setUserInfo(response.data);
+      setUserFromInfo(response.data);
+      return response.data;
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : '获取用户信息失败';
+      toast.error(message);
+      throw err;
+    }
+  };
+
   const handleLogout = () => {
     clearAuth();
     toast.success('已退出登录');
     router.push('/mall');
+  };
+
+  const handleSaveInfo = async () => {
+    const username = editUsername.trim();
+    if (!username) {
+      toast.error('请输入用户名');
+      return;
+    }
+
+    setSavingInfo(true);
+    try {
+      await userApi.updateInfo({ username });
+      await refreshUserInfo();
+      toast.success('信息已更新');
+      setEditInfoOpen(false);
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : '更新失败，请稍后重试';
+      toast.error(message);
+    } finally {
+      setSavingInfo(false);
+    }
+  };
+
+  const handleAvatarFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    setAvatarFile(file);
+    setAvatarPreviewUrl(file ? URL.createObjectURL(file) : '');
+  };
+
+  const handleUploadAvatar = async () => {
+    if (!avatarFile) {
+      toast.error('请选择头像图片');
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.append('avatar', avatarFile);
+      await userApi.uploadAvatar(formData);
+      await refreshUserInfo();
+      toast.success('头像已更新');
+      setAvatarOpen(false);
+    } catch (err) {
+      const message = err instanceof ApiError ? err.message : '上传失败，请稍后重试';
+      toast.error(message);
+    } finally {
+      setUploadingAvatar(false);
+    }
   };
 
   if (!isHydrated || loading) {
@@ -132,10 +220,10 @@ export default function MallProfilePage() {
               </div>
             </div>
             <div className="flex space-x-2">
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => setEditInfoOpen(true)}>
                 编辑信息
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => setAvatarOpen(true)}>
                 上传头像
               </Button>
             </div>
@@ -240,6 +328,60 @@ export default function MallProfilePage() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={editInfoOpen} onOpenChange={setEditInfoOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>编辑信息</DialogTitle>
+            <DialogDescription>修改您的用户名</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-2">
+            <Label htmlFor="username">用户名</Label>
+            <Input
+              id="username"
+              value={editUsername}
+              onChange={(e) => setEditUsername(e.target.value)}
+              autoComplete="nickname"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditInfoOpen(false)} disabled={savingInfo}>
+              取消
+            </Button>
+            <Button onClick={handleSaveInfo} disabled={savingInfo}>
+              保存
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={avatarOpen} onOpenChange={setAvatarOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>上传头像</DialogTitle>
+            <DialogDescription>选择图片后上传并更新头像</DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center gap-4">
+            <Avatar className="h-16 w-16">
+              <AvatarImage src={avatarPreviewUrl || userInfo.avatar} alt={userInfo.username} />
+              <AvatarFallback>{userInfo.username.charAt(0).toUpperCase()}</AvatarFallback>
+            </Avatar>
+            <div className="grid gap-2 flex-1">
+              <Label htmlFor="avatar">选择图片</Label>
+              <Input id="avatar" type="file" accept="image/*" onChange={handleAvatarFileChange} />
+              <p className="text-xs text-muted-foreground">{avatarFile ? avatarFile.name : '支持常见图片格式'}</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAvatarOpen(false)} disabled={uploadingAvatar}>
+              取消
+            </Button>
+            <Button onClick={handleUploadAvatar} disabled={!avatarFile || uploadingAvatar}>
+              上传
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

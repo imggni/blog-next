@@ -12,21 +12,21 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
   const url = `${baseUrl}${endpoint}`;
 
-  const config: RequestInit = {
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-    ...options,
-  };
+  const headers = new Headers(options.headers);
+  const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
+  if (!isFormData && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
 
   const token = getStoredToken();
   if (token) {
-    config.headers = {
-      ...config.headers,
-      Authorization: `Bearer ${token}`,
-    };
+    headers.set("Authorization", `Bearer ${token}`);
   }
+
+  const config: RequestInit = {
+    ...options,
+    headers,
+  };
 
   try {
     const response = await fetch(url, config);

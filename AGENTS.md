@@ -8,7 +8,6 @@ This repository is a Next.js App Router project (Next 16 + React 19) using TypeS
 npm install
 npm run dev   # http://localhost:1111
 npm run lint
-npm run build
 ```
 
 ## Structure

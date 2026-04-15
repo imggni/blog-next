@@ -29,6 +29,7 @@ export function CategoryIcon({ icon, name, size = 24 }: CategoryIconProps) {
         height={size}
         unoptimized
         loader={() => trimmed}
+        className="dark:invert"
       />
     );
   }

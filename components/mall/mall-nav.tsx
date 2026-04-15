@@ -92,7 +92,7 @@ export function MallNav() {
                 <DropdownMenuTrigger asChild>   
                   <Button className="inline-flex items-center gap-2 rounded-full px-3" variant="ghost" size="sm">
                     <Avatar size="sm">
-                      <AvatarImage src="https://avatars.githubusercontent.com/u/124599?v=4" alt="shadcn" />
+                      <AvatarImage src={user?.avatar} alt="shadcn" className="dark:invert" />
                       <AvatarFallback>{initials}</AvatarFallback>
                     </Avatar>
                     {user?.username ?? '账户'}
