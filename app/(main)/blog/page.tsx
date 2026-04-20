@@ -5,12 +5,7 @@ import { PostCard } from "@/components/blog/post-card";
 import { Search } from "@/components/blog/search";
 import { getAllPosts } from "@/lib/posts";
 
-export const metadata: Metadata = {
-  title: "博客",
-  description: "浏览博客文章列表，支持基础搜索与分页。",
-};
-
-const pageSize = 5;
+const pageSize = 10;
 
 function toSingleValue(value: string | string[] | undefined) {
   if (Array.isArray(value)) {
@@ -18,6 +13,58 @@ function toSingleValue(value: string | string[] | undefined) {
   }
 
   return value ?? "";
+}
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string | string[]; query?: string | string[] }>;
+}): Promise<Metadata> {
+  const resolvedSearchParams = await searchParams;
+  const query = toSingleValue(resolvedSearchParams.query).trim();
+  const requestedPage = Number(toSingleValue(resolvedSearchParams.page) || "1");
+  const currentPage = Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+
+  const normalizedQuery = query.toLowerCase();
+  const titleParts = ["博客"];
+
+  if (normalizedQuery) {
+    titleParts.push(`搜索：${normalizedQuery}`);
+  } else if (currentPage > 1) {
+    titleParts.push(`第 ${currentPage} 页`);
+  }
+
+  const title = titleParts.join(" - ");
+  const description = normalizedQuery
+    ? `“${normalizedQuery}” 的搜索结果。`
+    : "浏览博客文章列表，支持基础搜索与分页。";
+  const canonical = normalizedQuery ? "/blog" : currentPage > 1 ? `/blog?page=${currentPage}` : "/blog";
+
+  return {
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      title,
+      description,
+      url: canonical,
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+    robots: normalizedQuery
+      ? {
+          index: false,
+          follow: true,
+        }
+      : {
+          index: true,
+          follow: true,
+        },
+  };
 }
 
 export default async function BlogPage({

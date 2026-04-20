@@ -5,6 +5,21 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { getAllPosts, getPostBySlug, getPostSlugs } from "@/lib/posts";
 import { formatDate, parseMarkdown } from "@/lib/utils";
 
+function getSiteOrigin() {
+  const value = process.env.NEXT_PUBLIC_SITE_URL;
+
+  if (value) {
+    try {
+      return new URL(value);
+    } catch {}
+  }
+
+  return new URL("http://localhost:1111");
+}
+
+const siteOrigin = getSiteOrigin();
+const defaultOgImage = new URL("/images/monograph/hero.png", siteOrigin).toString();
+
 export async function generateStaticParams() {
   const slugs = await getPostSlugs();
 
@@ -28,6 +43,30 @@ export async function generateMetadata({
   return {
     title: post.title,
     description: post.description,
+    alternates: {
+      canonical: `/blog/${post.slug}`,
+    },
+    openGraph: {
+      title: post.title,
+      description: post.description,
+      url: `/blog/${post.slug}`,
+      type: "article",
+      publishedTime: post.date,
+      authors: ["lajBlog"],
+      tags: post.tags,
+      images: [{ url: "/images/monograph/hero.png" }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: post.title,
+      description: post.description,
+      images: ["/images/monograph/hero.png"],
+    },
+    robots: {
+      index: true,
+      follow: true,
+    },
+    keywords: post.tags,
   };
 }
 
@@ -44,6 +83,26 @@ export default async function BlogDetailPage({
   }
 
   const blocks = parseMarkdown(post.content);
+  const postUrl = new URL(`/blog/${post.slug}`, siteOrigin).toString();
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: post.title,
+    description: post.description,
+    datePublished: post.date,
+    dateModified: post.date,
+    author: {
+      "@type": "Person",
+      name: "lajBlog",
+    },
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": postUrl,
+    },
+    url: postUrl,
+    image: [defaultOgImage],
+    keywords: post.tags.join(", "),
+  };
   const relatedPosts = posts
     .filter((item) => item.slug !== post.slug)
     .slice(0, 3)
@@ -56,6 +115,7 @@ export default async function BlogDetailPage({
   return (
     <div className="grid gap-8 lg:grid-cols-[2fr_1fr]">
       <article className="rounded-3xl border border-border/70 bg-card px-6 py-8">
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
           <time dateTime={post.date}>{formatDate(post.date)}</time>
           {post.tags.map((tag) => (

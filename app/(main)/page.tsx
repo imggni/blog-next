@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { PostCard } from "@/components/blog/post-card";
 import { getAllPosts } from "@/lib/posts";
+import Image from "next/image";
 
 const featuredProjects = [
   {
@@ -16,7 +17,7 @@ const featuredProjects = [
 
 export default async function HomePage() {
   const posts = await getAllPosts();
-  const featuredPosts = posts.slice(0, 2);
+  const featuredPosts = posts.slice(0, 5);
 
   return (
     <div className="space-y-12">
@@ -42,6 +43,19 @@ export default async function HomePage() {
             className="rounded-xl border border-border px-5 py-3 text-sm font-medium"
           >
             浏览项目
+          </Link>
+          <Link
+            href="https://github.com/imggni/blog-next"
+            className="rounded-xl border border-border px-5 py-3 text-sm font-medium"
+            target="_blank"
+          > 
+            <Image
+              src="https://cdn.jsdelivr.net/npm/simple-icons@latest/icons/github.svg"
+              alt="github"
+              width={24}
+              height={24}
+              unoptimized={true} // 关键：SVG 必须加这个
+            />
           </Link>
         </div>
       </section>
