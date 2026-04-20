@@ -63,3 +63,28 @@ export type MallUserInfo = {
   createdAt: string;
   isAdmin: boolean;
 };
+
+export type ChatUser = {
+  id: string;
+  username: string;
+  avatar?: string | null;
+  online?: boolean | null;
+};
+
+export type ChatRoom = {
+  id: string;
+  roomName: string;
+  creatorId: string;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+};
+
+export type ChatMessage = {
+  id: string;
+  senderId: string;
+  receiverId?: string | null;
+  roomId?: string | null;
+  content: string;
+  isRead?: boolean | null;
+  sendTime: string;
+};

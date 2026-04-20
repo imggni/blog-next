@@ -6,3 +6,4 @@ export { productApi } from "@/lib/mall/server/product";
 export { addressApi } from "@/lib/mall/server/address";
 export { orderApi } from "@/lib/mall/server/order";
 export { collectionApi } from "@/lib/mall/server/collection";
+export { chatApi } from "@/lib/mall/server/chat";

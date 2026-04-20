@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -14,11 +15,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { userApi } from '@/lib/api';
 import { useAuthStore } from '@/hooks/use-auth-store';
+import { useChatStore } from '@/hooks/use-chat-store';
 
 const mallNavigationItems = [
   { href: '/mall', label: '商城首页' },
   { href: '/mall/product', label: '商品' },
   { href: '/mall/order', label: '订单' },
+  { href: '/mall/chat', label: '聊天' },
   { href: '/mall/collections', label: '收藏' },
   { href: '/mall/profile', label: '个人中心' },
   { href: '/mall/admin', label: '后台', adminOnly: true },
@@ -32,6 +35,7 @@ export function MallNav() {
   const clearAuth = useAuthStore((state) => state.clearAuth);
   const setUserFromInfo = useAuthStore((state) => state.setUserFromInfo);
   const [menuOpen, setMenuOpen] = useState(false);
+  const chatUnreadTotal = useChatStore((state) => state.getUnreadTotal());
 
   useEffect(() => {
     if (!isHydrated || !token || user) {
@@ -76,7 +80,14 @@ export function MallNav() {
             .filter((item) => !item.adminOnly || user?.isAdmin)
             .map((item) => (
               <Button key={item.href} variant="ghost" size="sm" asChild>
-                <Link href={item.href}>{item.label}</Link>
+                <Link href={item.href} className="inline-flex items-center gap-2">
+                  {item.label}
+                  {item.href === '/mall/chat' && chatUnreadTotal > 0 ? (
+                    <Badge variant="secondary" className="h-5 rounded-full px-2">
+                      {chatUnreadTotal > 99 ? '99+' : chatUnreadTotal}
+                    </Badge>
+                  ) : null}
+                </Link>
               </Button>
             ))}
         </nav>

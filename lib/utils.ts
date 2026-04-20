@@ -13,6 +13,31 @@ export function formatDate(date: string) {
   }).format(new Date(date))
 }
 
+export function formatChatTimestamp(value: string | Date) {
+  const date = value instanceof Date ? value : new Date(value)
+  const now = new Date()
+  const isSameDay =
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate()
+
+  const time = new Intl.DateTimeFormat("zh-CN", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date)
+
+  if (isSameDay) {
+    return time
+  }
+
+  const day = new Intl.DateTimeFormat("zh-CN", {
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date)
+
+  return `${day} ${time}`
+}
+
 export function createSlug(value: string) {
   return value
     .trim()

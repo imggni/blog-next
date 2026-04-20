@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
+import { createJSONStorage, persist, devtools } from "zustand/middleware";
 
 import {
   AUTH_STORAGE_KEY,
@@ -44,61 +44,63 @@ function normalizeUserInfo(userInfo: UserInfoData): StoredUser {
 }
 
 export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      token: null,
-      user: null,
-      isHydrated: false,
-      setHydrated: (isHydrated) => set({ isHydrated }),
-      setAuth: (token, user) => {
-        setAuthStorage(token, user);
-        set({ token, user });
-      },
-      setAuthFromLoginData: (data) => {
-        const user = normalizeLoginUser(data);
-        setAuthStorage(data.token, user);
-        set({ token: data.token, user });
-      },
-      setUser: (user) => {
-        set((state) => {
-          if (state.token) {
-            setAuthStorage(state.token, user);
-          }
+  devtools(
+    persist(
+      (set) => ({
+        token: null,
+        user: null,
+        isHydrated: false,
+        setHydrated: (isHydrated) => set({ isHydrated }),
+        setAuth: (token, user) => {
+          setAuthStorage(token, user);
+          set({ token, user });
+        },
+        setAuthFromLoginData: (data) => {
+          const user = normalizeLoginUser(data);
+          setAuthStorage(data.token, user);
+          set({ token: data.token, user });
+        },
+        setUser: (user) => {
+          set((state) => {
+            if (state.token) {
+              setAuthStorage(state.token, user);
+            }
 
-          return { user };
-        });
-      },
-      setUserFromInfo: (userInfo) => {
-        const user = normalizeUserInfo(userInfo);
-        set((state) => {
-          if (state.token) {
-            setAuthStorage(state.token, user);
-          }
+            return { user };
+          });
+        },
+        setUserFromInfo: (userInfo) => {
+          const user = normalizeUserInfo(userInfo);
+          set((state) => {
+            if (state.token) {
+              setAuthStorage(state.token, user);
+            }
 
-          return { user };
-        });
-      },
-      clearAuth: () => {
-        clearAuthStorage();
-        set({ token: null, user: null });
-      },
-    }),
-    {
-      name: AUTH_STORAGE_KEY,
-      storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({
-        token: state.token,
-        user: state.user,
+            return { user };
+          });
+        },
+        clearAuth: () => {
+          clearAuthStorage();
+          set({ token: null, user: null });
+        },
       }),
-      onRehydrateStorage: () => (state) => {
-        const legacyAuth = getLegacyAuthSnapshot();
+      {
+        name: AUTH_STORAGE_KEY,
+        storage: createJSONStorage(() => localStorage),
+        partialize: (state) => ({
+          token: state.token,
+          user: state.user,
+        }),
+        onRehydrateStorage: () => (state) => {
+          const legacyAuth = getLegacyAuthSnapshot();
 
-        if (state && !state.token && legacyAuth) {
-          state.setAuth(legacyAuth.token, legacyAuth.user);
-        }
+          if (state && !state.token && legacyAuth) {
+            state.setAuth(legacyAuth.token, legacyAuth.user);
+          }
 
-        state?.setHydrated(true);
-      },
-    }
+          state?.setHydrated(true);
+        },
+      }
+    )
   )
 );

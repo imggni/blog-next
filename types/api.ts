@@ -239,3 +239,65 @@ export interface OrderListParams {
 }
 
 export type OrderListResponse = Order[] | PaginatedResponse<Order>;
+
+export interface ChatUserSummary {
+  id: string;
+  username: string;
+  avatar?: string | null;
+}
+
+export interface ChatRoom {
+  id: string;
+  roomName: string;
+  isPrivate: boolean;
+  creator: ChatUserSummary;
+  memberCount: number;
+  joined: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ChatRoomCreateRequest {
+  roomName: string;
+  isPrivate?: boolean | null;
+}
+
+export interface ChatRoomMemberItem {
+  user: ChatUserSummary;
+  joinedAt: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  senderId: string;
+  receiverId?: string | null;
+  roomId?: string | null;
+  content: string;
+  isRead: boolean;
+  sendTime: string;
+  sender: ChatUserSummary;
+  receiver?: ChatUserSummary | null;
+  room?: {
+    id: string;
+    roomName: string;
+  } | null;
+}
+
+export interface ChatMessagePrivateSendRequest {
+  receiverId: string;
+  content: string;
+}
+
+export interface ChatMessageRoomSendRequest {
+  roomId: string;
+  content: string;
+}
+
+export type ChatPresenceItem = {
+  online: boolean;
+  lastSeenAt?: string | null;
+  username?: string;
+  avatar?: string | null;
+};
+
+export type ChatPresenceMap = Record<string, ChatPresenceItem>;
