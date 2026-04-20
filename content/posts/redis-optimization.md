@@ -1,3 +1,13 @@
+---
+title: "Redis 与索引优化落地清单"
+description: "基于 Express + Prisma + PostgreSQL + @upstash/redis 的商城/聊天项目，优化数据库索引与 Redis 缓存性能。"
+date: "2026-03-20"
+tags:
+  - "Redis"
+  - "Index"
+  - "Performance"
+---
+
 # Redis 与索引优化落地清单
 
 > 基于 Express + Prisma + PostgreSQL + @upstash/redis 的商城/聊天项目

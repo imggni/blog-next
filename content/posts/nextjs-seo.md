@@ -1,3 +1,13 @@
+---
+title: "项目 SEO 优化说明"
+description: "基于 Next.js 14.4.1 版本，优化项目 SEO 体验。"
+date: "2026-03-20"
+tags:
+  - "Next.js"
+  - "SEO"
+  - "Optimization"
+---
+
 # 项目 SEO 优化说明
 
 本文档汇总本项目已落地的 SEO 优化项、改动位置与验证方法，便于后续维护与扩展。
